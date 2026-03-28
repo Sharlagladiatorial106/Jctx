@@ -1,3 +1,4 @@
+![Demo GIF](./JctxSample.gif)
 # Jctx — Java Context Extractor
 
 **Turn any Java project into a single AI-ready `context.txt` in seconds.**
