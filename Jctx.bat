@@ -1,10 +1,10 @@
 @echo off
 setlocal
 :: ============================================================
-:: Jmap.bat  -  Java Project Context Mapper
+:: Jctx.bat  -  Java Context Extractor
 ::
 :: Usage:
-::   Jmap.bat <project_folder> [flags]
+::   Jctx.bat <project_folder> [flags]
 ::
 :: Flags:
 ::   --no-tree   Omit the file-tree section
@@ -12,18 +12,18 @@ setlocal
 ::   --help -h   Show full help and exit
 ::
 :: Examples:
-::   Jmap.bat "My Project"
-::   Jmap.bat "My Project" --no-tree
-::   Jmap.bat "My Project" --print
-::   Jmap.bat "My Project" --no-tree --print
-::   Jmap.bat --help
+::   Jctx.bat "My Project"
+::   Jctx.bat "My Project" --no-tree
+::   Jctx.bat "My Project" --print
+::   Jctx.bat "My Project" --no-tree --print
+::   Jctx.bat --help
 ::
 :: Output:
 ::   context.txt  placed inside the project folder
 :: ============================================================
 
 if "%~1"=="" (
-    python "%~dp0Jmap.py" --help
+    python "%~dp0Jctx.py" --help
     exit /b 0
 )
 
@@ -34,11 +34,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not exist "%~dp0Jmap.py" (
-    echo [ERROR] Cannot find Jmap.py
-    echo Make sure Jmap.py is in the same folder as this .bat file.
+if not exist "%~dp0Jctx.py" (
+    echo [ERROR] Cannot find Jctx.py
+    echo Make sure Jctx.py is in the same folder as this .bat file.
     exit /b 1
 )
 
-python "%~dp0Jmap.py" %*
+python "%~dp0Jctx.py" %*
 endlocal
