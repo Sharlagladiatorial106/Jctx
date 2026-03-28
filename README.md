@@ -1,50 +1,57 @@
 # Jctx — Java Context Extractor
 
-> Scan any Java project and produce a single `context.txt` — classes, fields, methods, and Javadoc — ready to paste into an AI chat for planning and architecture help.
+**Turn any Java project into a single AI-ready `context.txt` in seconds.**
+
+```
+Jctx "C:\projects\MyApp"
+→  context.txt written  (39 files, 12 classes, 247 methods)
+```
+
+No config. No dependencies. Just Python and a folder.
 
 ---
 
-## The problem it solves
+## Why it exists
 
-When you need planning help from an AI (Claude, ChatGPT, Gemini, etc.) on a Java project, you first have to explain your codebase. Copying files one by one, describing structure manually — it's slow and wastes your token budget before you even ask your real question.
+You're working on a Java project. You open an AI chat to get help. Before you can even ask your question, you spend 10 minutes copy-pasting files, explaining your class structure, summarising what each module does.
 
-**Jctx** fixes that. Point it at your project folder and it generates a single `context.txt` with everything structured and labelled, ready to paste.
+**Jctx does all of that in one command.**
 
----
+It scans your project and writes a clean, structured `context.txt` — every class, every field, every method signature, every Javadoc comment — formatted so an AI can immediately understand your entire codebase.
 
-## What gets extracted
-
-- A visual **file tree** of your project
-- Every **class**, **interface**, and **enum**
-- All **data members** (fields) with access modifiers and inline comments
-- All **methods**, numbered, with full signatures and attached **Javadoc**
-- Your **pom.xml** content if present
+Paste it. Ask your question. Get useful answers.
 
 ---
 
-## Example output
+## Output (real example)
+
+<details>
+<summary>Click to expand sample context.txt</summary>
 
 ```
 ================================================================
  JCTX - Java Context Extractor
- Project : C:\projects\MyApp
+ Project : C:\projects\Talken
  Date    : 2026-03-28 14:22:01
- Java    : 12 file(s)   |   POM: 1 file(s)
+ Java    : 39 file(s)   |   POM: 1 file(s)
 ================================================================
 
 ================================================================
  SECTION 1 - PROJECT FILE TREE
 ================================================================
 
-  MyApp\
+  Talken\
   ├── src\
   │   └── main\
   │       └── java\
-  │           └── com\
-  │               └── example\
-  │                   ├── App.java
-  │                   ├── UserService.java
-  │                   └── UserRepository.java
+  │           └── org\
+  │               └── flexstudios\
+  │                   └── talken\
+  │                       ├── Controls.java
+  │                       ├── TalkenClient.java
+  │                       ├── MessagingModule.java
+  │                       ├── EncryptionModule.java
+  │                       └── UserProfile.java
   └── pom.xml
 
 ================================================================
@@ -52,124 +59,136 @@ When you need planning help from an AI (Claude, ChatGPT, Gemini, etc.) on a Java
 ================================================================
 
 ----------------------------------------------------------------
-  FILE: src\main\java\com\example\UserService.java
+  FILE: src\main\java\org\flexstudios\talken\UserProfile.java
 ----------------------------------------------------------------
 
-  CLASS: UserService
-  DOC  : Handles all user-related business logic
+  CLASS: UserProfile
 
   DATA MEMBERS:
-    · private UserRepository repo
-    · private static final int MAX_RETRIES
+    · private String displayName
+    · private String email
+    · private String aboutSection
+    · private String profilePfpID
+    · private int version
 
   METHODS:
-    [1] User findById(int id)
-         DOC: Returns a user by their unique database ID @param id the user ID
-
-    [2] void save(User user)
+    [1] void setDisplayName(String s)
          DOC: (no documentation)
 
-    [3] List<User> findAll()
-         DOC: Fetches all active users from the repository
+    [2] String getDisplayName()
+         DOC: (no documentation)
+
+    [3] void setEmail(String email)
+         DOC: (no documentation)
+
+    [4] String getAboutSection()
+         DOC: (no documentation)
+
+    [5] int getVersion()
+         DOC: (no documentation)
+
+----------------------------------------------------------------
+  FILE: src\main\java\org\flexstudios\talken\MessagingModule.java
+----------------------------------------------------------------
+
+  CLASS: MessagingModule
+
+  DATA MEMBERS:
+    · private static final int port
+    · private static EventLoopGroup bossGroup
+    · private static boolean isRunning
+
+  METHODS:
+    [1] void start(String ip)
+         DOC: (no documentation)
+
+    [2] CompletableFuture<Boolean> askRUO(InetSocketAddress recipient)
+         DOC: (no documentation)
+
+    [3] void sendMessage(String message, InetSocketAddress recipient)
+         DOC: (no documentation)
 ```
+
+</details>
 
 ---
 
-## Requirements
+## Install (Windows)
 
-- **Python 3.8+** — [download here](https://python.org)
-- **Windows** for the `.bat` launcher and installer (`Jctx.py` runs on any OS with Python)
+**One-time Setup:**
 
----
+1. Download this repo (green **Code** button → Download ZIP)
+2. Unzip it
+3. Right-click `Setup.bat` → **Run as administrator**
+4. Open a new terminal
 
-## Installation (Windows)
-
-1. Download or clone this repo
-2. Right-click `setup.bat` → **Run as administrator**
-3. Follow the on-screen prompts
-4. Open a **new** terminal — done:
-
-```
-Jctx "C:\path\to\your\project"
+```bat
+Jctx "C:\path\to\your\java\project"
 ```
 
-### No admin rights?
+That's it. `context.txt` appears inside your project folder.
 
-Copy `Jctx.py` and `Jctx.bat` to any folder and run directly:
+> **No admin rights?** Copy `Jctx.py` + `Jctx.bat` anywhere and run `Jctx.bat` directly.
 
-```
-Jctx.bat "My Project"
-```
-
-Or with Python directly (any OS):
-
-```
-python Jctx.py "My Project"
-```
+> **Not on Windows?** Run `python Jctx.py "path/to/project"` on any OS with Python 3.8+.
 
 ---
 
 ## Usage
 
 ```
-Jctx <project_folder> [flags]
+Jctx <project_folder> [--no-tree] [--print] [--help]
 ```
 
-| Flag | What it does |
+| Flag | Effect |
 |---|---|
-| *(none)* | Full report saved to `context.txt` inside the project folder |
-| `--no-tree` | Omit the file tree (useful for very large projects) |
-| `--print` | Also print the report to the console |
-| `--help` | Show help and exit |
-
-### Examples
-
-```bat
-Jctx "C:\projects\MyApp"
-Jctx "C:\projects\MyApp" --no-tree
-Jctx "C:\projects\MyApp" --print
-Jctx "C:\projects\MyApp" --no-tree --print
-```
+| *(none)* | Saves `context.txt` into your project folder |
+| `--no-tree` | Skips the file tree section (shorter output) |
+| `--print` | Also prints to the console |
+| `--help` | Shows help |
 
 ---
 
-## Using the output with AI
+## How to use the output
 
-1. Run Jctx on your project
-2. Open `context.txt` from your project folder
-3. Copy and paste into your AI chat before your question
+Paste `context.txt` into any AI chat and ask your question:
 
-**Suggested opener:**
-> *"Here is the structure of my Java project: [paste context.txt]. I need help with..."*
+> *"Here's my Java project structure: [paste]. I want to refactor the messaging module to use WebSockets — where should I start?"*
 
----
-
-## What gets skipped automatically
-
-**Directories:** `build`, `target`, `out`, `bin`, `.gradle`, `.idea`, `.git`, `node_modules`, `lib`, `libs`, `generated`, `classes`, and more.
-
-**File types:** `.class`, `.jar`, `.war`, `.ear`, `.zip`, `.iml`, and other compiled/binary formats.
+Works great with **Claude**, **ChatGPT**, **Gemini**, and any other AI that accepts long text input.
 
 ---
 
-## Limitations
+## What it extracts
 
-- **Java only** — more languages may be added in future
-- Multi-line method signatures (parameters split across lines) are not yet captured
-- Anonymous inner classes and lambda bodies are intentionally excluded — only direct class members are listed
-
----
-
-## Files
-
-| File | Purpose |
+| What | Detail |
 |---|---|
-| `Jctx.py` | The extractor — works on any OS with Python 3.8+ |
-| `Jctx.bat` | Windows launcher — wraps `Jctx.py` for command-line use |
-| `setup.bat` | Windows installer — copies to `%ProgramFiles%\Jctx` and adds to PATH |
+| File tree | Full project structure, build folders excluded |
+| Classes | Name + Javadoc |
+| Fields | Type, name, access modifier, inline comments |
+| Methods | Numbered list — return type, name, params, Javadoc |
+| pom.xml | Full content if present |
+
+**Auto-ignored:** `build/`, `target/`, `.idea/`, `.git/`, `node_modules/`, `.class`, `.jar`, and all other build artifacts.
+
+---
+
+## Requirements
+
+- Python 3.8 or newer — [python.org](https://python.org)
+- Works on Windows, macOS, Linux
+
+---
+
+## Roadmap
+
+- [ ] Kotlin support
+- [ ] Markdown output mode (`context.md`)
+- [ ] Multi-language projects (mixed Java + Kotlin)
+- [ ] Token count estimate alongside output
 
 ---
 
 ## License
 
-MIT
+MIT — free to use, modify, and share.
