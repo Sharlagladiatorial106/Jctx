@@ -1,5 +1,9 @@
 ![Demo GIF](./JctxSample.gif)
-# Jctx — Java Context Extractor
+# Jctx — Give AI full understanding of your Java codebase
+
+**Stop pasting files. Get real architecture-aware answers.**
+
+Generate complete project context in seconds.
 
 **Turn any Java project into a single AI-ready `context.txt` in seconds.**
 
