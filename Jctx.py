@@ -1,6 +1,6 @@
 """
-Jctx.py  -  Java Context Extractor
-==============================
+Jctx.py  -  Java & Kotlin Context Extractor
+============================================
 
 USAGE
   python Jctx.py <project_folder> [flags]
@@ -9,10 +9,13 @@ USAGE
 FLAGS
   --no-tree   Skip the file-tree section from the output.
   --print     Also print the full report to this console window.
+  --md        Output in Markdown format (context.md instead of context.txt).
+  --version   Show version information and exit.
   --help  -h  Show this help page and exit.
 
 FLAGS CAN BE COMBINED
   --no-tree --print     Both at once, no problem.
+  --md --print          Markdown report, also printed.
 
 EXAMPLES
   Jctx.bat "Tic Tac Toe"
@@ -24,25 +27,38 @@ EXAMPLES
   Jctx.bat "Tic Tac Toe" --print
       Full report printed to the console AND saved to file.
 
+  Jctx.bat "Tic Tac Toe" --md
+      Markdown report saved to:  Tic Tac Toe\\context.md
+
   Jctx.bat "Tic Tac Toe" --no-tree --print
       No file tree, printed to console AND saved to file.
 
   Jctx.bat --help
       Show this help page.
 
+  Jctx.bat --version
+      Show version information.
+
 OUTPUT FILE
-  context.txt   placed inside the project folder.
+  context.txt   placed inside the project folder  (default)
+  context.md    placed inside the project folder  (with --md)
 
 WHAT IS EXTRACTED PER CLASS
-  - Class name and its Javadoc (if present)
-  - Data members  (fields): access modifier, type, name, inline comment
-  - Methods: numbered list with return type, name, parameters, Javadoc
+  - Class name and its Javadoc/KDoc (if present)
+  - Data members  (fields/properties): access modifier, type, name, inline comment
+  - Methods/Functions: numbered list with return type, name, parameters, documentation
 """
 
 import sys
 import os
 import re
 from datetime import datetime
+
+# ===================================================
+# VERSION
+# ===================================================
+
+VERSION = '1.1.0'
 
 # ===================================================
 # CONSTANTS
@@ -95,6 +111,38 @@ BLANK = '    '
 DIVIDER = '=' * 64
 SUBDIV  = '-' * 64
 
+# ── Kotlin-specific constants ────────────────────────────────
+
+KT_MODIFIERS = {
+    'public', 'private', 'protected', 'internal',
+    'open', 'final', 'abstract', 'sealed',
+    'override', 'inline', 'noinline', 'crossinline',
+    'suspend', 'tailrec', 'operator', 'infix', 'external',
+    'const', 'lateinit', 'actual', 'expect', 'annotation',
+    'inner', 'companion',
+}
+
+KT_ACCESS_MODS = {'public', 'private', 'protected', 'internal'}
+
+KT_CLASS_RE = re.compile(
+    r'\b(?:data\s+|sealed\s+|enum\s+|abstract\s+|open\s+|inner\s+|annotation\s+)*'
+    r'(?:class|interface|object)\s+(\w+)'
+)
+
+KT_FUNC_RE = re.compile(
+    r'\bfun\s+(?:<[^>]+>\s+)?(\w+)\s*\('
+)
+
+KT_PROP_RE = re.compile(
+    r'\b(val|var)\s+(\w+)\s*(?::\s*([\w<>\[\].,\s?]+?))?(?:\s*=.*)?$'
+)
+
+KT_SKIP_WORDS = {
+    'if', 'when', 'for', 'while', 'try', 'catch', 'finally',
+    'return', 'throw', 'break', 'continue', 'import', 'package',
+    'is', 'as', 'in', 'null', 'true', 'false', 'this', 'super',
+}
+
 
 # ===================================================
 # HELP
@@ -114,7 +162,7 @@ def should_skip_dir(name):
 
 def should_skip_file(name):
     _, ext = os.path.splitext(name)
-    return ext.lower() in SKIP_EXTENSIONS or name == 'context.txt'
+    return ext.lower() in SKIP_EXTENSIONS or name in ('context.txt', 'context.md')
 
 
 def build_tree_lines(root_dir):
@@ -478,6 +526,339 @@ def parse_java_file(path):
 
 
 # ===================================================
+# KOTLIN PARSER
+# ===================================================
+
+def _kt_strip_modifiers(tokens):
+    """
+    Remove leading Kotlin modifier keywords and annotations from a token list.
+    """
+    out = []
+    skip = True
+    for tok in tokens:
+        if skip and (tok in KT_MODIFIERS or tok.startswith('@')):
+            continue
+        skip = False
+        out.append(tok)
+    return out
+
+
+def _kt_get_access(raw_line):
+    for word in raw_line.split():
+        if word in KT_ACCESS_MODS:
+            return word
+    return ''
+
+
+def _kt_get_extra_mods(raw_line):
+    extras = []
+    for word in raw_line.split():
+        if word in KT_MODIFIERS and word not in KT_ACCESS_MODS:
+            extras.append(word)
+    return extras
+
+
+def _kt_try_parse_fun(clean_line):
+    """
+    Try to parse a Kotlin function declaration.
+
+    Expects a line like:
+      fun myFunc(param: Type, param2: Type): ReturnType
+      fun <T> myFunc(param: T): List<T>
+
+    Returns (return_type, func_name, params_str) or None.
+    """
+    m = KT_FUNC_RE.search(clean_line)
+    if not m:
+        return None
+
+    func_name = m.group(1)
+    if func_name in KT_SKIP_WORDS:
+        return None
+
+    # Extract params: everything between the matching ( and )
+    start = clean_line.index('(', m.start())
+    depth = 0
+    end = -1
+    for i in range(start, len(clean_line)):
+        if clean_line[i] == '(':
+            depth += 1
+        elif clean_line[i] == ')':
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+    if end == -1:
+        return None
+
+    params = clean_line[start + 1:end].strip()
+
+    # Return type: everything after ): up to { or end
+    after_paren = clean_line[end + 1:].strip()
+    ret_type = ''
+    if after_paren.startswith(':'):
+        ret_part = after_paren[1:].strip()
+        # Truncate at { or = (expression body)
+        for ch in ('{', '='):
+            idx = ret_part.find(ch)
+            if idx != -1:
+                ret_part = ret_part[:idx].strip()
+        ret_type = ret_part
+
+    return ret_type, func_name, params
+
+
+def parse_kotlin_file(path):
+    """
+    Parse a .kt file and return a dict with the same shape as parse_java_file:
+      {
+        'classes': [
+          {
+            'name':    str,
+            'doc':     str,
+            'fields':  [ {'access': str, 'mods': [str], 'type': str,
+                          'name': str, 'comment': str} ],
+            'methods': [ {'return': str, 'name': str, 'params': str,
+                          'doc': str} ]
+          }
+        ]
+      }
+
+    Uses brace-depth tracking like the Java parser.
+    Also captures top-level (file-scope) functions and properties
+    under a synthetic "(top-level)" class.
+
+    Kotlin class handling
+    ---------------------
+    A Kotlin class declaration may span multiple lines when it has a
+    primary constructor:
+
+        data class Product(
+            val id: Long,
+            val name: String
+        ) {
+            fun foo() { ... }
+        }
+
+    We handle this with two phases:
+      1. When we see the class keyword, we record the class and set
+         `awaiting_body = True` to indicate we haven't seen '{' yet.
+         While awaiting, any `val`/`var` params are constructor properties.
+      2. When we finally see '{' (possibly on a `) {` line), we set
+         `class_depth = brace_depth` and `awaiting_body = False`.
+    """
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            raw_lines = f.readlines()
+    except Exception as e:
+        return {'error': str(e), 'classes': []}
+
+    classes          = []
+    # Synthetic top-level container for file-scope declarations
+    top_level        = {
+        'name':    '(top-level)',
+        'doc':     '',
+        'fields':  [],
+        'methods': [],
+    }
+    current_class    = None
+    in_doc           = False
+    doc_lines        = []
+    pending_doc      = ''
+    in_block_comment = False
+    brace_depth      = 0
+    class_depth      = -1
+    awaiting_body    = False   # True when class declared but '{' not yet seen
+
+    for raw in raw_lines:
+        t        = raw.strip()
+        raw_full = raw.rstrip()
+
+        # ── Non-KDoc block comment  /* ... */  ───────────────────────
+        if not in_doc and not in_block_comment and '/*' in t and '/**' not in t:
+            in_block_comment = True
+        if in_block_comment:
+            if '*/' in t:
+                in_block_comment = False
+            continue
+
+        # ── KDoc  /** ... */  ────────────────────────────────────────
+        if '/**' in t:
+            if '*/' in t:
+                _js = t.index('/**') + 3
+                _je = t.index('*/', _js)
+                _jc = t[_js:_je].strip().lstrip('*').strip()
+                if _jc:
+                    pending_doc = _jc
+            else:
+                in_doc    = True
+                doc_lines = []
+            continue
+
+        if in_doc:
+            if '*/' in t:
+                in_doc      = False
+                pending_doc = ' '.join(doc_lines).strip()
+            else:
+                cleaned = re.sub(r'^\*\s?', '', t).strip()
+                if cleaned:
+                    doc_lines.append(cleaned)
+            continue
+
+        # ── Skip blanks and single-line comments  ────────────────────
+        if not t or t.startswith('//') or t.startswith('*'):
+            continue
+
+        # ── Capture depth BEFORE this line's braces  ─────────────────
+        depth_before = brace_depth
+        brace_depth += _net_braces(t)
+
+        # ── Class / Interface / Object declaration  ──────────────────
+        cm = KT_CLASS_RE.search(t)
+        if cm and re.search(r'\b(class|interface|object)\b', t):
+            # Skip import/package lines that happen to contain these words
+            if t.startswith('import ') or t.startswith('package '):
+                pending_doc = ''
+                continue
+
+            current_class = {
+                'name':    cm.group(1),
+                'doc':     pending_doc,
+                'fields':  [],
+                'methods': [],
+            }
+            classes.append(current_class)
+            pending_doc = ''
+
+            # Check if the class body opens on this line
+            if '{' in t:
+                class_depth  = brace_depth
+                awaiting_body = False
+            else:
+                # Body not opened yet (e.g. constructor params follow)
+                class_depth   = -1
+                awaiting_body = True
+            continue
+
+        # ── While awaiting class body '{' — capture constructor val/var
+        if awaiting_body and current_class is not None:
+            # Check if the opening brace appears on this line
+            if '{' in t:
+                class_depth   = brace_depth
+                awaiting_body = False
+
+            # Extract constructor val/var properties from these lines
+            pm = KT_PROP_RE.search(t)
+            if pm:
+                kind  = pm.group(1)       # val or var
+                pname = pm.group(2)
+                ptype = (pm.group(3) or '').strip()
+                # Clean trailing comma from type
+                ptype = ptype.rstrip(',').strip()
+
+                if pname not in KT_SKIP_WORDS and pname and not pname[0].isdigit():
+                    access = _kt_get_access(t)
+                    extras = _kt_get_extra_mods(t)
+                    extras.insert(0, kind)
+
+                    current_class['fields'].append({
+                        'access':  access,
+                        'mods':    extras,
+                        'type':    ptype if ptype else '(inferred)',
+                        'name':    pname,
+                        'comment': _inline_comment(raw_full),
+                    })
+
+            # If line is just `) {` or `)` with no val/var, just continue
+            pending_doc = ''
+            continue
+
+        # ── Determine target for this declaration  ───────────────────
+        # Reset class tracking when we return to file top-level
+        if depth_before == 0 and class_depth > 0:
+            class_depth = -1
+
+        # At class member level (depth_before == class_depth), use current_class.
+        # At file top-level (depth_before == 0, no active class body), use top_level.
+        target = None
+        if current_class is not None and class_depth > 0 and depth_before == class_depth:
+            target = current_class
+        elif depth_before == 0 and class_depth <= 0:
+            target = top_level
+
+        if target is None:
+            pending_doc = ''
+            continue
+
+        # ── Build a modifier-stripped version  ────────────────────────
+        tokens       = t.split()
+        clean_tokens = _kt_strip_modifiers(tokens)
+        clean        = ' '.join(clean_tokens)
+
+        # Remove trailing // comment
+        comment_idx = clean.find('//')
+        inline_comment = ''
+        if comment_idx != -1:
+            inline_comment = clean[comment_idx + 2:].strip()
+            clean = clean[:comment_idx].strip()
+
+        # Truncate at first '{'
+        _brace_idx = clean.find('{')
+        if _brace_idx != -1:
+            clean = clean[:_brace_idx].strip()
+
+        # ── Function detection  ──────────────────────────────────────
+        if 'fun ' in clean or clean.startswith('fun '):
+            parsed = _kt_try_parse_fun(clean)
+            if parsed:
+                ret, fname, params = parsed
+                target['methods'].append({
+                    'return': ret if ret else 'Unit',
+                    'name':   fname,
+                    'params': params,
+                    'doc':    pending_doc,
+                })
+                pending_doc = ''
+                continue
+
+        # ── Property detection (val / var)  ──────────────────────────
+        pm = KT_PROP_RE.search(clean)
+        if pm:
+            kind     = pm.group(1)       # val or var
+            pname    = pm.group(2)
+            ptype    = pm.group(3) or ''  # may be None if type is inferred
+            ptype    = ptype.strip()
+
+            if pname not in KT_SKIP_WORDS and pname and not pname[0].isdigit():
+                access = _kt_get_access(t)
+                extras = _kt_get_extra_mods(t)
+                extras.insert(0, kind)    # prepend val/var as a modifier
+
+                if not inline_comment:
+                    inline_comment = _inline_comment(raw_full)
+
+                target['fields'].append({
+                    'access':  access,
+                    'mods':    extras,
+                    'type':    ptype if ptype else '(inferred)',
+                    'name':    pname,
+                    'comment': inline_comment,
+                })
+                pending_doc = ''
+                continue
+
+        pending_doc = ''
+
+    # Only include top-level if it has content
+    result_classes = []
+    if top_level['fields'] or top_level['methods']:
+        result_classes.append(top_level)
+    result_classes.extend(classes)
+
+    return {'classes': result_classes}
+
+
+# ===================================================
 # FILE COLLECTORS
 # ===================================================
 
@@ -491,12 +872,33 @@ def collect_java_files(project_dir):
     return result
 
 
+def collect_kotlin_files(project_dir):
+    result = []
+    for root, dirs, files in os.walk(project_dir):
+        dirs[:] = sorted([d for d in dirs if not should_skip_dir(d)])
+        for fname in sorted(files):
+            if fname.endswith('.kt'):
+                result.append(os.path.join(root, fname))
+    return result
+
+
 def find_pom_files(project_dir):
     result = []
     for root, dirs, files in os.walk(project_dir):
         dirs[:] = sorted([d for d in dirs if not should_skip_dir(d)])
         for fname in sorted(files):
             if fname == 'pom.xml':
+                result.append(os.path.join(root, fname))
+    return result
+
+
+def find_gradle_files(project_dir):
+    result = []
+    gradle_names = {'build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts'}
+    for root, dirs, files in os.walk(project_dir):
+        dirs[:] = sorted([d for d in dirs if not should_skip_dir(d)])
+        for fname in sorted(files):
+            if fname in gradle_names:
                 result.append(os.path.join(root, fname))
     return result
 
@@ -518,7 +920,38 @@ def _format_field(f):
     return line
 
 
-def render_txt(project_dir, java_files, pom_files, show_tree):
+def _render_classes_txt(w, classes, label):
+    """Render a list of parsed classes in TXT format."""
+    for cls in classes:
+        w('')
+        w(f'  {label}: {cls["name"]}')
+        if cls['doc']:
+            w(f'  DOC  : {cls["doc"]}')
+        w('')
+
+        if cls['fields']:
+            w('  DATA MEMBERS:')
+            for fld in cls['fields']:
+                w('    · ' + _format_field(fld))
+            w('')
+        else:
+            w('  DATA MEMBERS: (none found)')
+            w('')
+
+        if not cls['methods']:
+            w('  METHODS: (none found)')
+            w('')
+        else:
+            w('  METHODS:')
+            for i, m in enumerate(cls['methods'], 1):
+                sig = f'{m["return"]} {m["name"]}({m["params"]})'
+                w(f'    [{i}] {sig}')
+                doc = m['doc'] if m['doc'] else '(no documentation)'
+                w(f'         DOC: {doc}')
+                w('')
+
+
+def render_txt(project_dir, java_files, kotlin_files, pom_files, gradle_files, show_tree):
     out = []
     w   = out.append
 
@@ -526,11 +959,21 @@ def render_txt(project_dir, java_files, pom_files, show_tree):
     if not show_tree:
         active_flags.append('--no-tree')
 
+    # ── Stats line  ──────────────────────────────────────────────
+    stats_parts = []
+    if java_files:
+        stats_parts.append(f'Java: {len(java_files)} file(s)')
+    if kotlin_files:
+        stats_parts.append(f'Kotlin: {len(kotlin_files)} file(s)')
+    stats_parts.append(f'POM: {len(pom_files)} file(s)')
+    if gradle_files:
+        stats_parts.append(f'Gradle: {len(gradle_files)} file(s)')
+
     w(DIVIDER)
-    w(' JCTX - Java Context Extractor')
+    w(f' JCTX v{VERSION} - Java & Kotlin Context Extractor')
     w(f' Project : {project_dir}')
     w(f' Date    : {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
-    w(f' Java    : {len(java_files)} file(s)   |   POM: {len(pom_files)} file(s)')
+    w(f' Files   : {" | ".join(stats_parts)}')
     if active_flags:
         w(f' Flags   : {" ".join(active_flags)}')
     w(DIVIDER)
@@ -538,6 +981,7 @@ def render_txt(project_dir, java_files, pom_files, show_tree):
 
     section = 1
 
+    # ── File Tree  ───────────────────────────────────────────────
     if show_tree:
         w(DIVIDER)
         w(f' SECTION {section} - PROJECT FILE TREE')
@@ -548,6 +992,7 @@ def render_txt(project_dir, java_files, pom_files, show_tree):
         w('')
         section += 1
 
+    # ── POM.XML  ─────────────────────────────────────────────────
     if pom_files:
         w('')
         w(DIVIDER)
@@ -569,55 +1014,83 @@ def render_txt(project_dir, java_files, pom_files, show_tree):
             w('')
         section += 1
 
-    w('')
-    w(DIVIDER)
-    w(f' SECTION {section} - CLASS AND MEMBER DETAILS')
-    w(DIVIDER)
-
-    for fp in java_files:
-        rel    = fp[len(project_dir):].lstrip(os.sep)
-        result = parse_java_file(fp)
-
+    # ── GRADLE FILES  ────────────────────────────────────────────
+    if gradle_files:
         w('')
-        w(SUBDIV)
-        w(f'  FILE: {rel}')
-        w(SUBDIV)
-
-        if 'error' in result:
-            w(f'  [ERROR: {result["error"]}]')
-            continue
-
-        if not result['classes']:
-            w('  (no classes found)')
-            continue
-
-        for cls in result['classes']:
+        w(DIVIDER)
+        w(f' SECTION {section} - GRADLE BUILD FILES')
+        w(DIVIDER)
+        for gradle_path in gradle_files:
+            rel = gradle_path[len(project_dir):].lstrip(os.sep)
             w('')
-            w(f'  CLASS: {cls["name"]}')
-            if cls['doc']:
-                w(f'  DOC  : {cls["doc"]}')
+            w(SUBDIV)
+            w(f'  FILE: {rel}')
+            w(SUBDIV)
             w('')
+            try:
+                with open(gradle_path, encoding='utf-8', errors='replace') as f:
+                    for line in f:
+                        w('  ' + line.rstrip())
+            except Exception as e:
+                w(f'  [ERROR: {e}]')
+            w('')
+        section += 1
 
-            if cls['fields']:
-                w('  DATA MEMBERS:')
-                for fld in cls['fields']:
-                    w('    · ' + _format_field(fld))
-                w('')
-            else:
-                w('  DATA MEMBERS: (none found)')
-                w('')
+    # ── Java Classes  ────────────────────────────────────────────
+    if java_files:
+        w('')
+        w(DIVIDER)
+        w(f' SECTION {section} - JAVA CLASS AND MEMBER DETAILS')
+        w(DIVIDER)
 
-            if not cls['methods']:
-                w('  METHODS: (none found)')
-                w('')
-            else:
-                w('  METHODS:')
-                for i, m in enumerate(cls['methods'], 1):
-                    sig = f'{m["return"]} {m["name"]}({m["params"]})'
-                    w(f'    [{i}] {sig}')
-                    doc = m['doc'] if m['doc'] else '(no documentation)'
-                    w(f'         DOC: {doc}')
-                    w('')
+        for fp in java_files:
+            rel    = fp[len(project_dir):].lstrip(os.sep)
+            result = parse_java_file(fp)
+
+            w('')
+            w(SUBDIV)
+            w(f'  FILE: {rel}')
+            w(SUBDIV)
+
+            if 'error' in result:
+                w(f'  [ERROR: {result["error"]}]')
+                continue
+
+            if not result['classes']:
+                w('  (no classes found)')
+                continue
+
+            _render_classes_txt(w, result['classes'], 'CLASS')
+
+        section += 1
+
+    # ── Kotlin Classes  ──────────────────────────────────────────
+    if kotlin_files:
+        w('')
+        w(DIVIDER)
+        w(f' SECTION {section} - KOTLIN CLASS AND MEMBER DETAILS')
+        w(DIVIDER)
+
+        for fp in kotlin_files:
+            rel    = fp[len(project_dir):].lstrip(os.sep)
+            result = parse_kotlin_file(fp)
+
+            w('')
+            w(SUBDIV)
+            w(f'  FILE: {rel}')
+            w(SUBDIV)
+
+            if 'error' in result:
+                w(f'  [ERROR: {result["error"]}]')
+                continue
+
+            if not result['classes']:
+                w('  (no classes/objects found)')
+                continue
+
+            _render_classes_txt(w, result['classes'], 'CLASS')
+
+        section += 1
 
     w('')
     w(DIVIDER)
@@ -628,11 +1101,200 @@ def render_txt(project_dir, java_files, pom_files, show_tree):
 
 
 # ===================================================
+# MARKDOWN RENDERER
+# ===================================================
+
+def _format_field_md(f):
+    """Format a field for a Markdown table row."""
+    access = f['access'] if f['access'] else '-'
+    mods   = ' '.join(f['mods']) if f['mods'] else '-'
+    ftype  = f['type']
+    fname  = f['name']
+    comment = f['comment'] if f['comment'] else ''
+    # Escape pipes in table cells
+    for val in (access, mods, ftype, fname, comment):
+        val = val.replace('|', '\\|')
+    return f'| {access} | {mods} | `{ftype}` | `{fname}` | {comment} |'
+
+
+def _render_classes_md(w, classes, label):
+    """Render a list of parsed classes in Markdown format."""
+    for cls in classes:
+        w('')
+        w(f'### {label}: `{cls["name"]}`')
+        if cls['doc']:
+            w(f'> {cls["doc"]}')
+        w('')
+
+        # Fields table
+        if cls['fields']:
+            w('**Data Members:**')
+            w('')
+            w('| Access | Modifiers | Type | Name | Comment |')
+            w('|--------|-----------|------|------|---------|')
+            for fld in cls['fields']:
+                w(_format_field_md(fld))
+            w('')
+        else:
+            w('**Data Members:** *(none found)*')
+            w('')
+
+        # Methods list
+        if not cls['methods']:
+            w('**Methods:** *(none found)*')
+            w('')
+        else:
+            w('**Methods:**')
+            w('')
+            for i, m in enumerate(cls['methods'], 1):
+                sig = f'{m["return"]} {m["name"]}({m["params"]})'
+                w(f'{i}. `{sig}`')
+                doc = m['doc'] if m['doc'] else '*(no documentation)*'
+                w(f'   - {doc}')
+            w('')
+
+
+def render_md(project_dir, java_files, kotlin_files, pom_files, gradle_files, show_tree):
+    out = []
+    w   = out.append
+
+    # ── Stats  ───────────────────────────────────────────────────
+    stats_parts = []
+    if java_files:
+        stats_parts.append(f'**Java:** {len(java_files)} file(s)')
+    if kotlin_files:
+        stats_parts.append(f'**Kotlin:** {len(kotlin_files)} file(s)')
+    stats_parts.append(f'**POM:** {len(pom_files)} file(s)')
+    if gradle_files:
+        stats_parts.append(f'**Gradle:** {len(gradle_files)} file(s)')
+
+    w(f'# JCTX v{VERSION} — Context Report')
+    w('')
+    w(f'- **Project:** `{project_dir}`')
+    w(f'- **Date:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+    w(f'- **Files:** {" · ".join(stats_parts)}')
+    w('')
+    w('---')
+
+    section = 1
+
+    # ── File Tree  ───────────────────────────────────────────────
+    if show_tree:
+        w('')
+        w(f'## {section}. Project File Tree')
+        w('')
+        w('```')
+        for line in build_tree_lines(project_dir):
+            w(line)
+        w('```')
+        w('')
+        section += 1
+
+    # ── POM.XML  ─────────────────────────────────────────────────
+    if pom_files:
+        w(f'## {section}. POM.XML Content')
+        w('')
+        for pom_path in pom_files:
+            rel = pom_path[len(project_dir):].lstrip(os.sep)
+            w(f'#### `{rel}`')
+            w('')
+            w('```xml')
+            try:
+                with open(pom_path, encoding='utf-8', errors='replace') as f:
+                    w(f.read().rstrip())
+            except Exception as e:
+                w(f'<!-- ERROR: {e} -->')
+            w('```')
+            w('')
+        section += 1
+
+    # ── GRADLE FILES  ────────────────────────────────────────────
+    if gradle_files:
+        w(f'## {section}. Gradle Build Files')
+        w('')
+        for gradle_path in gradle_files:
+            rel  = gradle_path[len(project_dir):].lstrip(os.sep)
+            lang = 'kotlin' if gradle_path.endswith('.kts') else 'groovy'
+            w(f'#### `{rel}`')
+            w('')
+            w(f'```{lang}')
+            try:
+                with open(gradle_path, encoding='utf-8', errors='replace') as f:
+                    w(f.read().rstrip())
+            except Exception as e:
+                w(f'// ERROR: {e}')
+            w('```')
+            w('')
+        section += 1
+
+    # ── Java Classes  ────────────────────────────────────────────
+    if java_files:
+        w(f'## {section}. Java Class & Member Details')
+        w('')
+        for fp in java_files:
+            rel    = fp[len(project_dir):].lstrip(os.sep)
+            result = parse_java_file(fp)
+
+            w(f'#### 📄 `{rel}`')
+
+            if 'error' in result:
+                w(f'> ⚠️ ERROR: {result["error"]}')
+                w('')
+                continue
+
+            if not result['classes']:
+                w('*(no classes found)*')
+                w('')
+                continue
+
+            _render_classes_md(w, result['classes'], 'Class')
+
+        w('---')
+        w('')
+        section += 1
+
+    # ── Kotlin Classes  ──────────────────────────────────────────
+    if kotlin_files:
+        w(f'## {section}. Kotlin Class & Member Details')
+        w('')
+        for fp in kotlin_files:
+            rel    = fp[len(project_dir):].lstrip(os.sep)
+            result = parse_kotlin_file(fp)
+
+            w(f'#### 📄 `{rel}`')
+
+            if 'error' in result:
+                w(f'> ⚠️ ERROR: {result["error"]}')
+                w('')
+                continue
+
+            if not result['classes']:
+                w('*(no classes/objects found)*')
+                w('')
+                continue
+
+            _render_classes_md(w, result['classes'], 'Class')
+
+        w('---')
+        w('')
+        section += 1
+
+    w('---')
+    w('*End of report.*')
+
+    return '\n'.join(out)
+
+
+# ===================================================
 # MAIN
 # ===================================================
 
 def main():
     args = sys.argv[1:]
+
+    if '--version' in args or '-v' in args:
+        print(f'Jctx v{VERSION}')
+        sys.exit(0)
 
     if not args or '--help' in args or '-h' in args:
         print_help()
@@ -653,39 +1315,52 @@ def main():
 
     show_tree = '--no-tree' not in flags
     do_print  = '--print'   in flags
+    do_md     = '--md'      in flags
 
-    known_flags = {'--no-tree', '--print', '--help', '-h'}
+    known_flags = {'--no-tree', '--print', '--help', '-h', '--version', '-v', '--md'}
     unknown = flags - known_flags
     if unknown:
         print(f'[WARN] Unknown flag(s): {", ".join(sorted(unknown))}')
         print('       Run with --help to see available flags.')
 
-    out_file = os.path.join(project, 'context.txt')
+    ext      = '.md' if do_md else '.txt'
+    out_file = os.path.join(project, 'context' + ext)
 
     print()
     print(DIVIDER)
-    print(' JCTX - Java Context Extractor')
+    print(f' JCTX v{VERSION} - Java & Kotlin Context Extractor')
     print(DIVIDER)
     print(f'  Project    : {project}')
     print(f'  Output     : {out_file}')
+    print(f'  Format     : {"Markdown" if do_md else "Plain text"}')
     print(f'  File tree  : {"yes" if show_tree else "no  (--no-tree)"}')
     print(f'  Console    : {"yes (--print)" if do_print else "no"}')
     print(DIVIDER)
     print()
 
-    java_files = collect_java_files(project)
-    pom_files  = find_pom_files(project)
+    java_files   = collect_java_files(project)
+    kotlin_files = collect_kotlin_files(project)
+    pom_files    = find_pom_files(project)
+    gradle_files = find_gradle_files(project)
 
-    if not java_files:
-        print(f'[ERROR] No .java files found in: {project}')
+    if not java_files and not kotlin_files:
+        print(f'[ERROR] No .java or .kt files found in: {project}')
         sys.exit(1)
 
-    print(f'  Java files : {len(java_files)}')
+    if java_files:
+        print(f'  Java files   : {len(java_files)}')
+    if kotlin_files:
+        print(f'  Kotlin files : {len(kotlin_files)}')
     if pom_files:
-        print(f'  POM files  : {len(pom_files)}')
+        print(f'  POM files    : {len(pom_files)}')
+    if gradle_files:
+        print(f'  Gradle files : {len(gradle_files)}')
     print()
 
-    report = render_txt(project, java_files, pom_files, show_tree)
+    if do_md:
+        report = render_md(project, java_files, kotlin_files, pom_files, gradle_files, show_tree)
+    else:
+        report = render_txt(project, java_files, kotlin_files, pom_files, gradle_files, show_tree)
 
     with open(out_file, 'w', encoding='utf-8') as f:
         f.write(report)
