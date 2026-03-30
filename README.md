@@ -108,13 +108,7 @@ Talken\
 
 ## Install (Windows)
 
-**Option 1: Chocolatey (Recommended)**
-```powershell
-choco install jctx
-```
-The `Jctx` command will be instantly available in your PATH.
-
-**Option 2: Manual Download**
+**Option : Manual Download**
 1. Download The Latest **Release** Zip.
 2. Unzip it
 3. Right-click `Setup.bat` → **Run as administrator**
