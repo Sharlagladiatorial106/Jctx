@@ -108,22 +108,28 @@ Talken\
 
 ---
 
-## Install (Windows)
+## Install
 
+**Option 1: PyPI (Recommended)**
+The easiest way to install Jctx on any OS (Windows, macOS, Linux) is via pip:
+```bash
+pip install jctx
+```
+The `jctx` command will be instantly available in your terminal.
+
+**Option 2: Manual Download (Windows)**
 1. Download The Latest **Release** Zip.
 2. Unzip it
 3. Right-click `Setup.bat` → **Run as administrator**
 4. Open a new terminal
 
 ```bat
-Jctx "C:\path\to\your\java\project"
+jctx "C:\path\to\your\java\project"
 ```
 
-That's it. `context.txt` appears inside your project folder.
+> **No admin rights?** Copy `jctx.py` + `jctx.bat` anywhere and run `jctx.bat` directly.
 
-> **No admin rights?** Copy `Jctx.py` + `Jctx.bat` anywhere and run `Jctx.bat` directly.
-
-> **Not on Windows?** Run `python Jctx.py "path/to/project"` on any OS with Python 3.8+.
+> **Not on Windows?** Run `python jctx.py "path/to/project"` on any OS with Python 3.8+.
 
 ---
 
