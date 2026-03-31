@@ -28,9 +28,9 @@ ChatGPT tells exactly which class to modify and why
 
 **Jctx does all of that in one command.**
 
-It scans your project and writes a clean, structured `context.txt` (or `context.md`) — every class, every field, every method signature, every Javadoc/KDoc comment, and your build files — formatted so an AI can immediately understand your entire codebase. 
+It scans your project and writes a clean, structured `context.txt` (or `context.md`) — every class, every field, every method signature, every Javadoc/KDoc comment, and your build files — formatted so an AI can immediately understand your entire codebase.
 
-It also provides **Token Count Estimation** and **Language Percentages** to help you stay within your AI's context limits.
+It also provides **Token Count Estimation**, **Language Percentages**, and a **Dependency Graph** — all printed to your console automatically.
 
 Paste it. Ask your question. Get useful answers.
 
@@ -42,10 +42,10 @@ Paste it. Ask your question. Get useful answers.
 <summary>Click to expand sample context.md (Markdown Mode)</summary>
 
 ````markdown
-# JCTX v1.6.1 — Context Report
+# JCTX v1.8.0 — Context Report
 
 - **Project:** `C:\projects\Talken`
-- **Date:** 2026-03-30 14:22:01
+- **Date:** 2026-03-31 12:00:00
 - **Files:** **Java:** 39 file(s) · **Kotlin:** 5 file(s) · **POM:** 1 file(s) · **Gradle:** 1 file(s)
 
 ---
@@ -110,7 +110,6 @@ Talken\
 
 ## Install (Windows)
 
-**Manual Download**
 1. Download The Latest **Release** Zip.
 2. Unzip it
 3. Right-click `Setup.bat` → **Run as administrator**
@@ -157,9 +156,13 @@ Works great with **Claude**, **ChatGPT**, **Gemini**, and any other AI that acce
 
 ---
 
-## Output Metrics (Token Count & Language Percentages)
+## Console Metrics
 
-After generating the file, Jctx displays an instant console summary that breaks down your project's total token count and provides a dynamic progress bar showing the exact split of **Java vs Kotlin** code. 
+After generating the file, Jctx prints a full analytics dashboard to your console:
+
+### Language Percentages
+
+Shows the exact split of Java vs Kotlin code with a visual progress bar:
 
 ```text
 ================================================================
@@ -168,16 +171,73 @@ After generating the file, Jctx displays an instant console summary that breaks 
   Java    :  68.2%  ██████████████████████████████████░░░░░░░░░░░░░░░░  (~23,400 tokens)
   Kotlin  :  31.8%  ███████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  (~10,910 tokens)
 ================================================================
- TOKEN COUNT ESTIMATE (GPT-4 / Claude / Gemini)
+```
+
+### Dependency Graph
+
+Automatically maps which of your project classes depend on which (only project-internal references — no external library noise):
+
+```text
 ================================================================
-  1. File Tree      :        312 tokens
-  2. Build Files    :        145 tokens
-  3. Source Code    :     34,310 tokens
-----------------------------------------------------------------
-  Estimated Total   :     34,767 tokens
+ DEPENDENCY GRAPH (project-internal)
+================================================================
+  EncryptionModule → (none)
+  MessagingModule → EncryptionModule, UserProfile
+  TalkenClient → EncryptionModule, MessagingModule, UserProfile
+  UserProfile → (none)
 ================================================================
 ```
-Use this to clearly determine if your project fits within your chosen AI's context window.
+
+### Token Count Estimate
+
+Shows the total token count with a breakdown by section and checks whether your context fits each major AI model's context window:
+
+```text
+================================================================
+ TOKEN ESTIMATE
+================================================================
+  Total tokens : ~34,767
+
+  Language Breakdown:
+    Java        : ~  23,400  ( 67.3%)
+    Kotlin      : ~  10,910  ( 31.4%)
+    Build files : ~     145  (  0.4%)
+    File tree   : ~     312  (  0.9%)
+
+  Context Window Fit:
+    Y Llama 4 Scout (10M)      Y Gemini 3.1 (2M)          Y Grok (2M)
+    Y GPT-5.4 (1M)             Y Claude 4.6 (1M)          Y Qwen 3 (1M)
+================================================================
+```
+
+---
+
+## `.jctxignore` — Custom Exclusions
+
+Place a `.jctxignore` file in the project root to exclude additional directories or files from context extraction:
+
+```gitignore
+# Skip test directories
+**/test/**
+
+# Skip generated code
+generated/
+
+# Skip specific file patterns
+*.test.java
+```
+
+| Pattern | Meaning |
+|---------|---------|
+| `dirname/` | Skip any directory named `dirname` |
+| `**/test/**` | Skip any directory named `test` anywhere in the tree |
+| `*.test.java` | Skip files matching the glob pattern |
+| `# comment` | Lines starting with `#` are ignored |
+
+When a `.jctxignore` is detected, the console banner shows:
+```
+  .jctxignore: yes (2 dirs, 1 patterns)
+```
 
 ---
 
@@ -191,7 +251,7 @@ Use this to clearly determine if your project fits within your chosen AI's conte
 | Fields | Type, name, access modifier, val/var (Kotlin), inline comments |
 | Methods | Numbered list — return type, name, params, Javadoc/KDoc and top-level Kotlin functions |
 
-**Auto-ignored:** `build/`, `target/`, `.idea/`, `.git/`, `node_modules/`, `.gradle/`, `.class`, `.jar`, and all other build artifacts.
+**Auto-ignored:** `build/`, `target/`, `.idea/`, `.git/`, `node_modules/`, `.gradle/`, `.class`, `.jar`, and all other build artifacts. Customize further with `.jctxignore`.
 
 ---
 
@@ -209,7 +269,11 @@ Use this to clearly determine if your project fits within your chosen AI's conte
 - [x] Multi-language project estimations (mixed Java + Kotlin percentages)
 - [x] Token count estimate alongside output
 - [x] Clipboard support and Slim mode
+- [x] Dependency graph (project-internal)
+- [x] `.jctxignore` custom exclusions
 - [ ] Cross-platform packaging (Homebrew / pip)
+- [ ] Python language support
+- [ ] Architecture diagram generation (`--diagram`)
 
 ---
 
