@@ -1,4 +1,4 @@
-![Demo GIF](./JctxSample-1.8.0.gif)
+![Demo GIF](./JctxSample1.8.0.gif)
 # Jctx — Give AI full understanding of your Java & Kotlin codebase
 
 **Stop pasting files. Get real architecture-aware answers.**
@@ -39,70 +39,76 @@ Paste it. Ask your question. Get useful answers.
 ## Output (real example)
 
 <details>
-<summary>Click to expand sample context.md (Markdown Mode)</summary>
+<summary>Click to expand sample context.txt (Plain Text - Default)</summary>
 
-````markdown
-# JCTX v1.8.0 — Context Report
+```text
+================================================================
+ JCTX v1.8.0 - Java & Kotlin Context Extractor
+ Project : C:\projects\Talken
+ Date    : 2026-03-31 12:00:00
+ Files   : Java: 39 file(s) | Kotlin: 5 file(s) | POM: 1 file(s) | Gradle: 1 file(s)
+================================================================
 
-- **Project:** `C:\projects\Talken`
-- **Date:** 2026-03-31 12:00:00
-- **Files:** **Java:** 39 file(s) · **Kotlin:** 5 file(s) · **POM:** 1 file(s) · **Gradle:** 1 file(s)
+================================================================
+ SECTION 1 - PROJECT FILE TREE
+================================================================
 
----
+  Talken\
+  ├── src\
+  │   └── main\
+  │       ├── java\
+  │       │   └── org\
+  │       │       └── flexstudios\
+  │       │           └── talken\
+  │       │               ├── Controls.java
+  │       │               └── TalkenClient.java
+  │       └── kotlin\
+  │           └── org\
+  │               └── flexstudios\
+  │                   └── talken\
+  │                       └── UserProfile.kt
+  ├── build.gradle
+  └── pom.xml
 
-## 1. Project File Tree
+================================================================
+ SECTION 2 - POM.XML CONTENT
+================================================================
 
+----------------------------------------------------------------
+  FILE: pom.xml
+----------------------------------------------------------------
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <project>
+      <modelVersion>4.0.0</modelVersion>
+      <groupId>org.flexstudios</groupId>
+      <artifactId>talken</artifactId>
+      <version>1.0.0</version>
+  </project>
+
+================================================================
+ SECTION 3 - KOTLIN CLASS AND MEMBER DETAILS
+================================================================
+
+----------------------------------------------------------------
+  FILE: src\main\kotlin\org\flexstudios\talken\UserProfile.kt
+----------------------------------------------------------------
+
+  CLASS: UserProfile
+  DOC  : Represents the user's local profile settings.
+
+  DATA MEMBERS:
+    · private val String displayName
+    · private val String email
+
+  METHODS:
+    [1] String getAboutSection()
+         DOC: (no documentation)
+
+================================================================
+ END OF REPORT
+================================================================
 ```
-Talken\
-├── src\
-│   └── main\
-│       ├── java\
-│       │   └── org\
-│       │       └── flexstudios\
-│       │           └── talken\
-│       │               ├── Controls.java
-│       │               └── TalkenClient.java
-│       └── kotlin\
-│           └── org\
-│               └── flexstudios\
-│                   └── talken\
-│                       └── UserProfile.kt
-├── build.gradle
-└── pom.xml
-```
-
-## 2. POM.XML Content
-
-#### `pom.xml`
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<project>
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.flexstudios</groupId>
-    <artifactId>talken</artifactId>
-    <version>1.0.0</version>
-</project>
-```
-
-## 3. Kotlin Class & Member Details
-
-#### 📄 `src\main\kotlin\org\flexstudios\talken\UserProfile.kt`
-
-### Class: `UserProfile`
-> Represents the user's local profile settings.
-
-**Data Members:**
-
-| Access | Modifiers | Type | Name | Comment |
-|--------|-----------|------|------|---------|
-| private | val | `String` | `displayName` | |
-| private | val | `String` | `email` | |
-
-**Methods:**
-
-1. `String getAboutSection()`
-   - *(no documentation)*
-````
 
 </details>
 
